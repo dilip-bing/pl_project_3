@@ -1,24 +1,43 @@
 package simplf; 
 
 class Environment {
+    final Environment enclosing;
+    private final java.util.Map<String, Object> values = new java.util.HashMap<>();
+
     Environment() {
-        //throw new UnsupportedOperationException("TODO: implement environments.");
+        this.enclosing = null;
     }
 
     Environment(Environment enclosing) {
-        throw new UnsupportedOperationException("TODO: implement environments.");
+        this.enclosing = enclosing;
     }
 
     void define(Token varToken, String name, Object value) {
-        throw new UnsupportedOperationException("TODO: implement environments.");
+        values.put(name, value);
     }
 
     void assign(Token name, Object value) {
-        throw new UnsupportedOperationException("TODO: implement environments.");
+        String key = name.lexeme;
+        if (values.containsKey(key)) {
+            values.put(key, value);
+            return;
+        }
+        if (enclosing != null) {
+            enclosing.assign(name, value);
+            return;
+        }
+        throw new RuntimeError(name, "Undefined variable '" + key + "'.");
     }
 
     Object get(Token name) {
-        throw new UnsupportedOperationException("TODO: implement environments.");
+        String key = name.lexeme;
+        if (values.containsKey(key)) {
+            return values.get(key);
+        }
+        if (enclosing != null) {
+            return enclosing.get(name);
+        }
+        throw new RuntimeError(name, "Undefined variable '" + key + "'.");
     }
 }
 

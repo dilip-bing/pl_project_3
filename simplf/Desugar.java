@@ -82,7 +82,46 @@ public class Desugar implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
 
     @Override
     public Stmt visitForStmt(For stmt) {
-        throw new UnsupportedOperationException("TODO: desugar for loops");
+        // Transform for-loop into an equivalent while-loop form.
+        // Resulting form: (initializer;) while (condition) { body; increment; }
+        Stmt initializer = null;
+        if (stmt.init != null) {
+            // If present, treat the initializer expression as an expression statement.
+            initializer = new Expression(stmt.init.accept(this));
+        }
+
+        Expr condition = null;
+        if (stmt.cond != null) {
+            condition = stmt.cond.accept(this);
+        } else {
+            // Missing condition means 'true' (infinite loop unless broken).
+            condition = new Literal(true);
+        }
+
+        Stmt body = stmt.body.accept(this);
+
+        if (stmt.incr != null) {
+            // Place the increment expression at the end of the loop body.
+            java.util.ArrayList<Stmt> body_stmts = new java.util.ArrayList<>();
+            if (body instanceof Block) {
+                body_stmts.addAll(((Block) body).statements);
+            } else {
+                body_stmts.add(body);
+            }
+            body_stmts.add(new Expression(stmt.incr.accept(this)));
+            body = new Block(body_stmts);
+        }
+
+        Stmt whileStmt = new While(condition, body);
+
+        if (initializer != null) {
+            java.util.ArrayList<Stmt> stmts = new java.util.ArrayList<>();
+            stmts.add(initializer);
+            stmts.add(whileStmt);
+            return new Block(stmts);
+        }
+
+        return whileStmt;
     }
 
     @Override
